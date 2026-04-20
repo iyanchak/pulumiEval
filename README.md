@@ -7,14 +7,16 @@ This repository contains a Pulumi program written in Go that provisions a Kubern
 ## Architecture
 ```mermaid
 graph LR
-    PVC[(sqlite-pvc)] -->|mounts|> Deployment[counter-deployment]
+    PVC[(sqlite-pvc)] -->|mounts| Deployment[counter-deployment]
     Deployment --> Service[counter-service]
-    Service --> NodePort[NodePort (auto)]
-    subgraph Worker_Nodes[Worker Nodes]
+    Service --> NodePort[NodePort: 31223]
+    
+    subgraph Worker_Nodes [Worker Nodes]
         node1[worker-1]
         node2[worker-2]
     end
-    Service -->|affinity|> Worker_Nodes
+    
+    Service -.->|affinity| Worker_Nodes
 ```
 
 ### Components
