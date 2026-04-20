@@ -10,11 +10,11 @@ graph LR
     PVC[sqlite-pvc] --> Deployment[counter-deployment]
     Deployment --> Service[counter-service]
     Service --> NodePort[NodePort (auto)]
-    subgraph Worker Nodes
+    subgraph Worker_Nodes[Worker Nodes]
         node1[worker-1]
         node2[worker-2]
     end
-    Service -->|affinity| Worker Nodes
+    Service -->|affinity| Worker_Nodes
 ```
 
 ### Components

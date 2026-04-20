@@ -38,7 +38,7 @@ func createResources(ctx *pulumi.Context) error {
 	}
 	// Inside createResources...
 	cwd, _ := os.Getwd()
-	// This creates a solid path like /home/ihor/GolandProjects/pulumiEval/counter
+	// This creates a solid path like /home/ and so on
 	absCounterDir := filepath.Join(cwd, "counter")
 	absDockerfile := filepath.Join(absCounterDir, "Dockerfile")
 
