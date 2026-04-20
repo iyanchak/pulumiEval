@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
+
+	"github.com/pulumi/pulumi-docker/sdk/v4/go/docker" // Updated to v4
 	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1"
 	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
@@ -12,8 +16,9 @@ func main() {
 		return createResources(ctx)
 	})
 }
+
 func createResources(ctx *pulumi.Context) error {
-	// PersistentVolumeClaim
+	// 1. PersistentVolumeClaim
 	pvc, err := corev1.NewPersistentVolumeClaim(ctx, "sqlite-pvc", &corev1.PersistentVolumeClaimArgs{
 		Metadata: &metav1.ObjectMetaArgs{
 			Name: pulumi.String("sqlite-pvc"),
@@ -31,8 +36,30 @@ func createResources(ctx *pulumi.Context) error {
 	if err != nil {
 		return err
 	}
+	// Inside createResources...
+	cwd, _ := os.Getwd()
+	// This creates a solid path like /home/ihor/GolandProjects/pulumiEval/counter
+	absCounterDir := filepath.Join(cwd, "counter")
+	absDockerfile := filepath.Join(absCounterDir, "Dockerfile")
 
-	// Deployment
+	counterImage, err := docker.NewImage(ctx, "counter-image", &docker.ImageArgs{
+		Build: &docker.DockerBuildArgs{
+			Context:    pulumi.String(absCounterDir),
+			Dockerfile: pulumi.String(absDockerfile),
+			Platform:   pulumi.String("linux/amd64"),
+			// FORCE BUILDER V1 TO BYPASS NETWORK ERRORS
+			BuilderVersion: docker.BuilderVersionBuilderV1,
+		},
+		ImageName: pulumi.String("localhost:32000/counter-server:latest"),
+		Registry: &docker.RegistryArgs{
+			Server: pulumi.String("localhost:32000"),
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	// 3. Deployment
 	_, err = appsv1.NewDeployment(ctx, "counter-deployment", &appsv1.DeploymentArgs{
 		Metadata: &metav1.ObjectMetaArgs{
 			Name: pulumi.String("counter-deployment"),
@@ -54,7 +81,7 @@ func createResources(ctx *pulumi.Context) error {
 					Containers: corev1.ContainerArray{
 						&corev1.ContainerArgs{
 							Name:  pulumi.String("counter"),
-							Image: pulumi.String("ghcr.io/sidpalas/devops-directive-kubernetes-course/counter-service:v1.0.0"),
+							Image: counterImage.ImageName, // Now this variable exists!
 							Ports: corev1.ContainerPortArray{
 								&corev1.ContainerPortArgs{ContainerPort: pulumi.Int(8080)},
 							},
@@ -99,7 +126,7 @@ func createResources(ctx *pulumi.Context) error {
 		return err
 	}
 
-	// Service
+	// 4. Service
 	svc, err := corev1.NewService(ctx, "counter-service", &corev1.ServiceArgs{
 		Metadata: &metav1.ObjectMetaArgs{
 			Name: pulumi.String("counter-service"),
@@ -112,8 +139,7 @@ func createResources(ctx *pulumi.Context) error {
 			Ports: corev1.ServicePortArray{
 				&corev1.ServicePortArgs{
 					Port:       pulumi.Int(80),
-					TargetPort: pulumi.Int(8080),
-					// Let Kubernetes allocate a nodePort automatically
+					TargetPort: pulumi.Int(8080), // Matched to the Go server port
 				},
 			},
 		},
@@ -124,10 +150,14 @@ func createResources(ctx *pulumi.Context) error {
 
 	// Export the allocated NodePort
 	ctx.Export("nodePort", svc.Spec.Ports().Index(pulumi.Int(0)).NodePort().ApplyT(func(p *int) int {
-	    if p == nil {
-	        return 0
-	    }
-	    return *p
+		if p == nil {
+			return 0
+		}
+		return *p
 	}).(pulumi.IntOutput))
+
+	// Export the Image Name
+	ctx.Export("deployedImage", counterImage.ImageName)
+
 	return nil
 }

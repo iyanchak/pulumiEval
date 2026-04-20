@@ -8,22 +8,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// 1. Corrected the struct definition
 type testMocks struct{}
 
-// 2. FIXED: Correct signature for NewResource
-// Returns: (id string, state resource.PropertyMap, err error)
 func (m *testMocks) NewResource(args pulumi.MockResourceArgs) (string, resource.PropertyMap, error) {
-	// Record the resource token and name for verification
 	tokenName := args.TypeToken + ":" + args.Name
 	recordedResources = append(recordedResources, tokenName)
 
-	// Pulumi expects (ID, State, Error)
-	// For mocks, we usually just return the name as the ID and the inputs as the state
-	return args.Name, args.Inputs, nil
+	// We must ensure the Docker image resource returns an "ImageName"
+	// so the Deployment doesn't crash when it tries to read it.
+	outputs := args.Inputs.Copy()
+	if args.TypeToken == "docker:index/image:Image" {
+		// Mock the generated image name that the Deployment expects
+		outputs["imageName"] = resource.NewStringProperty("localhost:32000/counter-server:latest")
+	}
+
+	return args.Name, outputs, nil
 }
 
-// 3. FIXED: Correct signature for Call
 func (m *testMocks) Call(_ pulumi.MockCallArgs) (resource.PropertyMap, error) {
 	return resource.PropertyMap{}, nil
 }
@@ -31,18 +32,18 @@ func (m *testMocks) Call(_ pulumi.MockCallArgs) (resource.PropertyMap, error) {
 var recordedResources []string
 
 func TestCreateResources(t *testing.T) {
-	// Reset the slice for each test run
 	recordedResources = []string{}
 
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
-		// Ensure createResources(ctx) is defined in your main.go
 		return createResources(ctx)
 	}, pulumi.WithMocks("project", "stack", &testMocks{}))
 
 	assert.NoError(t, err)
 
+	// UPDATED: Added the Docker image to the list of expected resources
 	expected := []string{
 		"kubernetes:core/v1:PersistentVolumeClaim:sqlite-pvc",
+		"docker:index/image:Image:counter-image", // The new Build-and-Push resource
 		"kubernetes:apps/v1:Deployment:counter-deployment",
 		"kubernetes:core/v1:Service:counter-service",
 	}

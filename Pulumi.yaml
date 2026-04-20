@@ -1,0 +1,3 @@
+name: pulumiEval
+runtime: go
+description: My Pulumi Go app for MicroK8s

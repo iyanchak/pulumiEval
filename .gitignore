@@ -1,0 +1,54 @@
+# === Go ===
+# Binaries and object files
+bin/
+counter/counter-server
+counter/test-binary
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# === SQLite ===
+# Ignore the local database files created during testing
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# === Pulumi ===
+# Pulumi maintains its own state. If you use local state, it lives here.
+.pulumi/
+# Log files
+*.log
+Pulumi.dev.yaml
+# (Optional) Ignore any other stack configs you might create
+Pulumi.*.yaml
+
+# === Docker ===
+# Usually, we don't have many local docker artifacts, but good to have
+.docker/
+
+# === IDEs / Editors ===
+# You mentioned GoLand, so we definitely need to ignore JetBrains files
+.idea/
+# VS Code
+.vscode/
+*.code-workspace
+# Vim swap files
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+*.un~
+
+# === OS Specific ===
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+./main
+counter/counter

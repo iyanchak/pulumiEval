@@ -23,7 +23,7 @@ graph LR
 - **Service (`counter-service`)**: A `NodePort` service exposing the application on port 8080.
 
 ## Prerequisites
-- Go 1.22+
+- Go 1.25+
 - Pulumi CLI v3.x
 - Pulumi Kubernetes SDK v4.x
 - Access to a Kubernetes cluster (e.g., MicroK8s)
@@ -103,3 +103,84 @@ MIT License
 ## References
 - [Pulumi Go SDK](https://www.pulumi.com/docs/languages-go/)
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
+
+## Current Progress
+
+The Go Counter Server has been implemented in `counter/main.go` using `http.NewServeMux`.
+
+The server handles `GET /hits` and `POST /hits` and persists data using the SQLite DB in `counter/db.go`.
+
+Unit tests for the server and DB are implemented and passing.
+
+The current infrastructure in `main.go` is set up for a Kubernetes Deployment and Service.
+
+Everything works end to end:
+
+### Pulumi Deployment & Smoke Test Results
+#### 1. Pulumi Stack Update
+
+Type                               Name                Status            
+pulumi:pulumi:Stack                pulumiEval-dev      
+~ ├─ kubernetes:core/v1:Service      counter-service     updated (10s)
++ └─ kubernetes:apps/v1:Deployment   counter-deployment  created (1s)
+
+Outputs:
+deployedImage: "localhost:32000/counter-server:latest"
+nodePort     : 31223
+
+### 2. Cluster Resource Status
+####  Persistent Volume Claim (Storage)
+ 
+Resources:
++ 1 created
+~ 1 updated
+2 changes. 3 unchanged
+
+Duration: 13s
+
+NAME                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        AGE
+persistentvolumeclaim/sqlite-pvc   Bound    pvc-59f9ea28-2330-47da-a83f-1d1da3383dcd   1Gi        RWO            microk8s-hostpath   6h47m
+
+#### Pods (Application)
+
+NAME                                       READY   STATUS    RESTARTS   AGE   IP            NODE          
+pod/counter-deployment-77994d8df9-b8r66    1/1     Running   0          10s   <pod-ip>      <worker-node>
+
+#### Services (Networking)
+
+NAME                      TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+service/counter-service   NodePort   <service-ip>     <none>        80:31223/TCP   6h47m   app=counter
+service/kubernetes        ClusterIP  <cluster-ip>     <none>        443/TCP        24h     <none>
+
+
+### 3. Smoke Test Verification
+#### Step 1: Check initial count
+
+$ curl -v http://<service-ip>:80/hits
+> GET /hits HTTP/1.1
+> Host: <service-ip>
+...
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+{"hits":0}
+
+#### Step 2: Increment the counter (POST request)
+
+$ curl -X POST -v http://<service-ip>:80/hits
+> POST /hits HTTP/1.1
+> Host: <service-ip>
+...
+< HTTP/1.1 204 No Content
+
+#### Step 3: Verify incremented count
+
+$ curl -v http://<service-ip>:80/hits
+> GET /hits HTTP/1.1
+> Host: <service-ip>
+...
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+{"hits":1}
+
+### Status: Smoke test completed successfully. Counter persistence and routing verified.
+
