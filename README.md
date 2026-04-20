@@ -7,14 +7,14 @@ This repository contains a Pulumi program written in Go that provisions a Kubern
 ## Architecture
 ```mermaid
 graph LR
-    PVC[sqlite-pvc] --> Deployment[counter-deployment]
+    PVC[(sqlite-pvc)] -->|mounts|> Deployment[counter-deployment]
     Deployment --> Service[counter-service]
     Service --> NodePort[NodePort (auto)]
     subgraph Worker_Nodes[Worker Nodes]
         node1[worker-1]
         node2[worker-2]
     end
-    Service -->|affinity| Worker_Nodes
+    Service -->|affinity|> Worker_Nodes
 ```
 
 ### Components
@@ -70,7 +70,7 @@ curl http://<node-ip>:<nodePort>/increment
 ## Testing
 The project uses Pulumi mocks to validate resource creation without requiring a live cluster.
 ```bash
-go test ./...
+go test./...
 ```
 The tests verify the instantiation of the PVC, Deployment, and Service.
 
@@ -79,7 +79,7 @@ The tests verify the instantiation of the PVC, Deployment, and Service.
 ├─ go.mod
 ├─ go.sum
 ├─ main.go          # Pulumi program entry point
-└─ main_test.go     # Pulumi mocks & unit tests
+├─ main_test.go     # Pulumi mocks & unit tests
 ```
 
 ## Configuration
@@ -94,7 +94,7 @@ pulumi destroy
 ## Contributing
 1. Fork the repository.
 2. Create a feature branch.
-3. Run `go test ./...` to ensure no regressions.
+3. Run `go test./...` to ensure no regressions.
 4. Submit a Pull Request.
 
 ## License
@@ -125,12 +125,12 @@ pulumi:pulumi:Stack                pulumiEval-dev
 + └─ kubernetes:apps/v1:Deployment   counter-deployment  created (1s)
 
 Outputs:
-deployedImage: "localhost:32000/counter-server:latest"
-nodePort     : 31223
+  deployedImage: "localhost:32000/counter-server:latest"
+  nodePort     : 31223
 
 ### 2. Cluster Resource Status
 ####  Persistent Volume Claim (Storage)
- 
+
 Resources:
 + 1 created
 ~ 1 updated
@@ -151,7 +151,6 @@ pod/counter-deployment-77994d8df9-b8r66    1/1     Running   0          10s   <p
 NAME                      TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE     SELECTOR
 service/counter-service   NodePort   <service-ip>     <none>        80:31223/TCP   6h47m   app=counter
 service/kubernetes        ClusterIP  <cluster-ip>     <none>        443/TCP        24h     <none>
-
 
 ### 3. Smoke Test Verification
 #### Step 1: Check initial count
