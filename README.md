@@ -32,6 +32,16 @@ graph LR
 - Docker (for pulling the container image)
 - `kubectl` (optional, for manual inspection)
 
+Note: The following needs to be installed (it is just for buildpack, not pulumi):
+```bash
+# 1. Add the official PPA
+sudo add-apt-repository ppa:cncf-buildpacks/pack-cli
+
+# 2. Update and Install
+sudo apt-get update
+sudo apt-get install pack-cli
+```
+
 ## Getting Started
 1. **Clone the repo**
    ```bash
@@ -127,7 +137,7 @@ pulumi:pulumi:Stack                pulumiEval-dev
 + └─ kubernetes:apps/v1:Deployment   counter-deployment  created (1s)
 
 Outputs:
-  deployedImage: "localhost:32000/counter-server:latest"
+  deployedImage: "counter-server:latest"
   nodePort     : 31223
 
 ### 2. Cluster Resource Status

@@ -34,12 +34,21 @@ func CreateResources(ctx *pulumi.Context) error {
 	cwd, _ := os.Getwd()
 	absCounterDir := filepath.Join(cwd, "cmd", "counter")
 
-	imageName := "localhost:32000/counter-server:latest"
+	imageName := "counter-server:latest"
 
-	// Kocal.NewCommand to run pack
+	// 2a. Build to Docker
 	buildCmd, err := local.NewCommand(ctx, "build-counter", &local.CommandArgs{
-		Create: pulumi.Sprintf("pack build %s --builder gcr.io/buildpacks/builder:google-22 --env CGO_ENABLED=0 --path %s --publish", pulumi.String(imageName), pulumi.String(absCounterDir)),
+		Create: pulumi.Sprintf("pack build %s --builder gcr.io/buildpacks/builder:google-22 --env CGO_ENABLED=0 --path %s", pulumi.String(imageName), pulumi.String(absCounterDir)),
 	})
+	if err != nil {
+		return err
+	}
+
+	// 2b. Import to MicroK8s (Specific for local microk8s installation)
+	// We use bash -c to support the bash process substitution <()
+	importCmd, err := local.NewCommand(ctx, "import-counter", &local.CommandArgs{
+		Create: pulumi.Sprintf("bash -c \"microk8s images import <(docker save %s)\"", pulumi.String(imageName)),
+	}, pulumi.DependsOn([]pulumi.Resource{buildCmd}))
 	if err != nil {
 		return err
 	}
@@ -65,8 +74,9 @@ func CreateResources(ctx *pulumi.Context) error {
 				Spec: &corev1.PodSpecArgs{
 					Containers: corev1.ContainerArray{
 						&corev1.ContainerArgs{
-							Name:  pulumi.String("counter"),
-							Image: pulumi.String(imageName),
+							Name:            pulumi.String("counter"),
+							Image:           pulumi.String(imageName),
+							ImagePullPolicy: pulumi.String("IfNotPresent"), // Use local image for microk8s
 							Ports: corev1.ContainerPortArray{
 								&corev1.ContainerPortArgs{ContainerPort: pulumi.Int(8080)},
 							},
@@ -106,7 +116,7 @@ func CreateResources(ctx *pulumi.Context) error {
 				},
 			},
 		},
-	}, pulumi.DependsOn([]pulumi.Resource{buildCmd}))
+	}, pulumi.DependsOn([]pulumi.Resource{importCmd}))
 	if err != nil {
 		return err
 	}
