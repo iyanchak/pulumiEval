@@ -1,4 +1,4 @@
-module pulumiEval
+module pulumiEval/cmd/counter
 
 go 1.25.8
 

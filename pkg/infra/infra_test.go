@@ -1,4 +1,4 @@
-package main
+package infra
 
 import (
 	"testing"
@@ -14,13 +14,7 @@ func (m *testMocks) NewResource(args pulumi.MockResourceArgs) (string, resource.
 	tokenName := args.TypeToken + ":" + args.Name
 	recordedResources = append(recordedResources, tokenName)
 
-	// We must ensure the Docker image resource returns an "ImageName"
-	// so the Deployment doesn't crash when it tries to read it.
 	outputs := args.Inputs.Copy()
-	if args.TypeToken == "docker:index/image:Image" {
-		// Mock the generated image name that the Deployment expects
-		outputs["imageName"] = resource.NewStringProperty("localhost:32000/counter-server:latest")
-	}
 
 	return args.Name, outputs, nil
 }
@@ -35,15 +29,14 @@ func TestCreateResources(t *testing.T) {
 	recordedResources = []string{}
 
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
-		return createResources(ctx)
+		return CreateResources(ctx)
 	}, pulumi.WithMocks("project", "stack", &testMocks{}))
 
 	assert.NoError(t, err)
 
-	// UPDATED: Added the Docker image to the list of expected resources
 	expected := []string{
 		"kubernetes:core/v1:PersistentVolumeClaim:sqlite-pvc",
-		"docker:index/image:Image:counter-image", // The new Build-and-Push resource
+		"command:local:Command:build-counter", // The new pack build command
 		"kubernetes:apps/v1:Deployment:counter-deployment",
 		"kubernetes:core/v1:Service:counter-service",
 	}
