@@ -36,7 +36,8 @@ func TestCreateResources(t *testing.T) {
 
 	expected := []string{
 		"kubernetes:core/v1:PersistentVolumeClaim:sqlite-pvc",
-		"command:local:Command:build-counter", // The new pack build command
+		"command:local:Command:build-counter",  // The new pack build command
+		"command:local:Command:import-counter", // Import to microk8s
 		"kubernetes:apps/v1:Deployment:counter-deployment",
 		"kubernetes:core/v1:Service:counter-service",
 	}
