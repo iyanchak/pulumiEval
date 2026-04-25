@@ -34,21 +34,12 @@ func CreateResources(ctx *pulumi.Context) error {
 	cwd, _ := os.Getwd()
 	absCounterDir := filepath.Join(cwd, "cmd", "counter")
 
-	imageName := "counter-server:latest"
+	imageName := "localhost:32000/counter-server:latest"
 
-	// 2a. Build to Docker
+	// 2. Build and Publish to MicroK8s Registry
 	buildCmd, err := local.NewCommand(ctx, "build-counter", &local.CommandArgs{
-		Create: pulumi.Sprintf("pack build %s --builder gcr.io/buildpacks/builder:google-22 --env CGO_ENABLED=0 --path %s", pulumi.String(imageName), pulumi.String(absCounterDir)),
+		Create: pulumi.Sprintf("pack build %s --builder gcr.io/buildpacks/builder:google-22 --buildpack google.go.runtime --buildpack google.go.build --env CGO_ENABLED=0 --publish --path %s", pulumi.String(imageName), pulumi.String(absCounterDir)),
 	})
-	if err != nil {
-		return err
-	}
-
-	// 2b. Import to MicroK8s (Specific for local microk8s installation)
-	// We use bash -c to support the bash process substitution <()
-	importCmd, err := local.NewCommand(ctx, "import-counter", &local.CommandArgs{
-		Create: pulumi.Sprintf("bash -c \"microk8s images import <(docker save %s)\"", pulumi.String(imageName)),
-	}, pulumi.DependsOn([]pulumi.Resource{buildCmd}))
 	if err != nil {
 		return err
 	}
@@ -116,7 +107,7 @@ func CreateResources(ctx *pulumi.Context) error {
 				},
 			},
 		},
-	}, pulumi.DependsOn([]pulumi.Resource{importCmd}))
+	}, pulumi.DependsOn([]pulumi.Resource{buildCmd}))
 	if err != nil {
 		return err
 	}
