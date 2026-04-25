@@ -36,7 +36,7 @@ func CreateResources(ctx *pulumi.Context) error {
 
 	imageName := "localhost:32000/counter-server:latest"
 
-	// Replace docker.NewImage with local.NewCommand to run pack
+	// Kocal.NewCommand to run pack
 	buildCmd, err := local.NewCommand(ctx, "build-counter", &local.CommandArgs{
 		Create: pulumi.Sprintf("pack build %s --builder gcr.io/buildpacks/builder:google-22 --env CGO_ENABLED=0 --path %s --publish", pulumi.String(imageName), pulumi.String(absCounterDir)),
 	})
