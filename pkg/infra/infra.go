@@ -16,6 +16,9 @@ func CreateResources(ctx *pulumi.Context) error {
 	pvc, err := corev1.NewPersistentVolumeClaim(ctx, "sqlite-pvc", &corev1.PersistentVolumeClaimArgs{
 		Metadata: &metav1.ObjectMetaArgs{
 			Name: pulumi.String("sqlite-pvc"),
+			Annotations: pulumi.StringMap{
+				"pulumi.com/skipAwait": pulumi.String("true"),
+			},
 		},
 		Spec: &corev1.PersistentVolumeClaimSpecArgs{
 			AccessModes: pulumi.StringArray{pulumi.String("ReadWriteOnce")},
