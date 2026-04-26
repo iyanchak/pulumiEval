@@ -76,7 +76,7 @@ pulumi stack output nodePort
 ```
 Interact with the service:
 ```bash
-curl http://<node-ip>:<nodePort>/increment
+curl http://<node-ip>:<nodePort>/hits
 ```
 
 ## Testing
