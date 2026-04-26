@@ -61,9 +61,15 @@ sudo apt-get install pack-cli
    pulumi stack init dev
    ```
 5. **Deploy**
-   ```bash
-   pulumi up
-   ```
+    ```bash
+    pulumi up
+    ```
+
+**Note:** For MicroK8s deployments, the `pulumi up` command may require you to run `sudo echo 1` beforehand **or** add the following line to `/etc/sudoers` (via `sudo visudo`):
+
+```
+<user> ALL=(ALL) NOPASSWD: /snap/bin/microk8s ctr images import -
+```
 6. **Verify**
    ```bash
    kubectl get pvc,pod,svc
