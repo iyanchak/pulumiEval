@@ -49,7 +49,7 @@ func CreateResources(ctx *pulumi.Context) error {
 
 	// Side-load the image into microk8s
 	importImage, err := local.NewCommand(ctx, "importImage", &local.CommandArgs{
-		Create: pulumi.Sprintf("bash -c 'docker save %s | microk8s ctr images import -'", pulumi.String(imageName)),
+		Create: pulumi.Sprintf("bash -c 'docker save %s | sudo microk8s ctr images import -'", pulumi.String(imageName)),
 	}, pulumi.DependsOn([]pulumi.Resource{buildCmd}))
 	if err != nil {
 		return err
